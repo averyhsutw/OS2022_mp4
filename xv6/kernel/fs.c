@@ -682,7 +682,7 @@ skipelem(char *path, char *name)
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
 static struct inode*
-namex(char *path, int nameiparent, char *name)
+namex(char *path, int nameiparent, char *name, int depth)
 {
   // TODO: Symbolic Link to Directories
   // Modify this function to deal with symbolic links to directories.
@@ -696,12 +696,16 @@ namex(char *path, int nameiparent, char *name)
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
     if(ip->type == T_SYMLINK){
+      if(depth > 10){
+        iunlockput(ip);
+        return 0;
+      }
       char newpath[MAXPATH], buf[MAXPATH];
       int newpath_len;
       readi(ip, 0, (uint64)&newpath_len, 0, sizeof(int));
       readi(ip, 0, (uint64)newpath, sizeof(int), newpath_len + 1);
       iunlockput(ip);
-      ip = namex(newpath, 0, buf);
+      ip = namex(newpath, 0, buf, depth +1);
       ilock(ip);
     }
     if(ip==0 || ip->type != T_DIR){
@@ -731,11 +735,11 @@ struct inode*
 namei(char *path)
 {
   char name[DIRSIZ];
-  return namex(path, 0, name);
+  return namex(path, 0, name, 0);
 }
 
 struct inode*
 nameiparent(char *path, char *name)
 {
-  return namex(path, 1, name);
+  return namex(path, 1, name, 0);
 }

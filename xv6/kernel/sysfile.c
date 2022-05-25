@@ -562,6 +562,7 @@ sys_symlink(void)
   int target_len = strlen(target);
   if (target_len > MAXPATH)
     target_len = MAXPATH;
+  ilock(ip);
   writei(ip, 0, (uint64)&target_len, 0, sizeof(int));
   writei(ip, 0, (uint64)target, sizeof(int), target_len + 1);
   iupdate(ip);
